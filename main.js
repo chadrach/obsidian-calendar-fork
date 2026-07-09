@@ -5665,6 +5665,12 @@ class CalendarView extends obsidian.ItemView {
         if (view instanceof obsidian.FileView) {
             file = view.file;
         }
+        else {
+            // Recognize embedded editors (e.g. the Daily Notes Editor) that redirect
+            // activation to a non-FileView parent leaf but keep workspace.activeEditor
+            // pointed at the in-view note. This mirrors how Bases reads the active file.
+            file = this.app.workspace.getActiveFile();
+        }
         activeFile.setFile(file);
         if (file) {
             // Keep the associated notes pane in sync with the active daily note

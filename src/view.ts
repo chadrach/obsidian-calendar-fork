@@ -352,9 +352,14 @@ export default class CalendarView extends ItemView {
   private updateActiveFile(): void {
     const { view } = this.app.workspace.activeLeaf;
 
-    let file = null;
+    let file: TFile | null = null;
     if (view instanceof FileView) {
       file = view.file;
+    } else {
+      // Recognize embedded editors (e.g. the Daily Notes Editor) that redirect
+      // activation to a non-FileView parent leaf but keep workspace.activeEditor
+      // pointed at the in-view note. This mirrors how Bases reads the active file.
+      file = this.app.workspace.getActiveFile();
     }
     activeFile.setFile(file);
 
