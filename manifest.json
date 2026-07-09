@@ -1,7 +1,7 @@
 {
-  "id": "calendar",
-  "name": "Calendar",
-  "description": "Calendar view of your daily notes",
+  "id": "calendar-fork",
+  "name": "Calendar Fork",
+  "description": "Calendar view of your daily notes (fork with associated notes pane)",
   "version": "1.5.10",
   "author": "Liam Cain",
   "authorUrl": "https://github.com/liamcain/",

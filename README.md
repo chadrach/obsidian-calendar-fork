@@ -4,7 +4,7 @@ This plugin for [Obsidian](https://obsidian.md/) creates a simple Calendar view 
 
 ## Fork enhancements
 
-This fork adds an **Associated Notes** feature on top of the original plugin:
+This fork is installed as a separate plugin (id `calendar-fork`) so it can coexist with the original "Calendar" plugin without conflict — install it into `<vault>/.obsidian/plugins/calendar-fork/`. It adds an **Associated Notes** feature on top of the original plugin:
 
 - **Associated notes pane**: a pane underneath the calendar lists the notes associated with the currently selected date (selected by clicking a day, or by opening a daily note). A note is associated with a date if:
   - it has a frontmatter date property matching the date (property names configurable, e.g. `date`),

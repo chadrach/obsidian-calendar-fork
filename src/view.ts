@@ -153,7 +153,7 @@ export default class CalendarView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
-    // Integration point: external plugins can listen for `calendar:open`
+    // Integration point: external plugins can listen for `calendar-fork:open`
     // to feed in additional sources.
     const sources = [
       customTagsSource,

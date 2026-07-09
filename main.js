@@ -8,8 +8,8 @@ var obsidian__default = /*#__PURE__*/_interopDefaultLegacy(obsidian);
 
 const DEFAULT_WEEK_FORMAT = "gggg-[W]ww";
 const DEFAULT_WORDS_PER_DOT = 250;
-const VIEW_TYPE_CALENDAR = "calendar";
-const TRIGGER_ON_OPEN = "calendar:open";
+const VIEW_TYPE_CALENDAR = "calendar-fork";
+const TRIGGER_ON_OPEN = "calendar-fork:open";
 
 const DEFAULT_DAILY_NOTE_FORMAT = "YYYY-MM-DD";
 const DEFAULT_WEEKLY_NOTE_FORMAT = "gggg-[W]ww";
@@ -5512,7 +5512,7 @@ class CalendarView extends obsidian.ItemView {
         return Promise.resolve();
     }
     async onOpen() {
-        // Integration point: external plugins can listen for `calendar:open`
+        // Integration point: external plugins can listen for `calendar-fork:open`
         // to feed in additional sources.
         const sources = [
             customTagsSource,
@@ -5731,13 +5731,52 @@ class CalendarView extends obsidian.ItemView {
     }
 }
 
+// Legacy plugin id used by the original "Calendar" plugin. Several
+// community plugins -- including `obsidian-daily-notes-interface`, which
+// this plugin itself depends on -- hard-code lookups for a plugin
+// registered under this id to read Weekly Note settings (format, folder,
+// template) when the Periodic Notes plugin isn't installed.
+const LEGACY_PLUGIN_ID = "calendar";
 class CalendarPlugin extends obsidian.Plugin {
+    constructor() {
+        super(...arguments);
+        this.didRegisterLegacyAlias = false;
+    }
     onunload() {
         this.app.workspace
             .getLeavesOfType(VIEW_TYPE_CALENDAR)
             .forEach((leaf) => leaf.detach());
+        this.unregisterLegacyAlias();
+    }
+    /**
+     * Alias this plugin under the original Calendar plugin's id so that
+     * `obsidian-daily-notes-interface`'s Weekly Note settings lookup keeps
+     * working now that this fork uses a distinct id. Only registers the
+     * alias when nothing already occupies that id, so an actual install of
+     * the original Calendar plugin is never shadowed.
+     */
+    registerLegacyAlias() {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pluginManager = this.app.plugins;
+        if ((pluginManager === null || pluginManager === void 0 ? void 0 : pluginManager.plugins) && !pluginManager.plugins[LEGACY_PLUGIN_ID]) {
+            pluginManager.plugins[LEGACY_PLUGIN_ID] = this;
+            this.didRegisterLegacyAlias = true;
+        }
+    }
+    unregisterLegacyAlias() {
+        var _a;
+        if (!this.didRegisterLegacyAlias) {
+            return;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pluginManager = this.app.plugins;
+        if (((_a = pluginManager === null || pluginManager === void 0 ? void 0 : pluginManager.plugins) === null || _a === void 0 ? void 0 : _a[LEGACY_PLUGIN_ID]) === this) {
+            delete pluginManager.plugins[LEGACY_PLUGIN_ID];
+        }
+        this.didRegisterLegacyAlias = false;
     }
     async onload() {
+        this.registerLegacyAlias();
         this.register(settings.subscribe((value) => {
             this.options = value;
         }));
