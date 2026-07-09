@@ -14,7 +14,7 @@
 
 #calendar-container .dot.associated,
 #calendar-container .hollow.associated {
-  fill: var(--calendar-associated-dot-color, #e9973f);
+  fill: var(--calendar-associated-dot-color, var(--interactive-accent));
 }
 
 #calendar-container .dot.associated.active,

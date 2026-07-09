@@ -2,11 +2,7 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 import { appHasDailyNotesPluginLoaded } from "obsidian-daily-notes-interface";
 import type { ILocaleOverride, IWeekStartOption } from "obsidian-calendar-ui";
 
-import {
-  DEFAULT_ASSOCIATED_DOT_COLOR,
-  DEFAULT_WEEK_FORMAT,
-  DEFAULT_WORDS_PER_DOT,
-} from "src/constants";
+import { DEFAULT_WEEK_FORMAT, DEFAULT_WORDS_PER_DOT } from "src/constants";
 
 import type CalendarPlugin from "./main";
 
@@ -21,6 +17,10 @@ export interface ISettings {
   showTaskDots: boolean;
   showAssociatedDots: boolean;
   associatedDotColor: string;
+  showAssociatedDotsForRanges: boolean;
+
+  // Behavior settings
+  autoRevealActiveNote: boolean;
 
   // Associated notes settings
   showAssociatedNotesPane: boolean;
@@ -60,7 +60,11 @@ export const defaultSettings = Object.freeze({
 
   showTaskDots: true,
   showAssociatedDots: true,
-  associatedDotColor: DEFAULT_ASSOCIATED_DOT_COLOR,
+  // Empty string means "use the theme's --interactive-accent color"
+  associatedDotColor: "",
+  showAssociatedDotsForRanges: true,
+
+  autoRevealActiveNote: true,
 
   showAssociatedNotesPane: true,
   associatedDateProperties: "date",
@@ -116,6 +120,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     this.addDotThresholdSetting();
     this.addWeekStartSetting();
     this.addConfirmCreateSetting();
+    this.addAutoRevealActiveNoteSetting();
     this.addShowWeeklyNoteSetting();
 
     this.containerEl.createEl("h3", {
@@ -125,6 +130,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     this.addShowAssociatedDotsSetting();
     if (this.plugin.options.showAssociatedDots) {
       this.addAssociatedDotColorSetting();
+      this.addShowAssociatedDotsForRangesSetting();
     }
 
     this.containerEl.createEl("h3", {
@@ -223,6 +229,20 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
   }
 
+  addAutoRevealActiveNoteSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Follow active note")
+      .setDesc(
+        "When you switch to a daily or weekly note, automatically navigate the calendar to that date"
+      )
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.autoRevealActiveNote);
+        toggle.onChange(async (value) => {
+          this.plugin.writeOptions(() => ({ autoRevealActiveNote: value }));
+        });
+      });
+  }
+
   addShowWeeklyNoteSetting(): void {
     new Setting(this.containerEl)
       .setName("Show week number")
@@ -268,14 +288,30 @@ export class CalendarSettingsTab extends PluginSettingTab {
   addAssociatedDotColorSetting(): void {
     new Setting(this.containerEl)
       .setName("Associated note dot color")
-      .setDesc("The color used for the associated note dots")
+      .setDesc(
+        "Any CSS color (hex, name, rgb(), etc). Leave blank to use your theme's accent color."
+      )
       .addText((textfield) => {
-        textfield.inputEl.type = "color";
-        textfield.setValue(
-          this.plugin.options.associatedDotColor || DEFAULT_ASSOCIATED_DOT_COLOR
-        );
+        textfield.setPlaceholder("Theme accent color");
+        textfield.setValue(this.plugin.options.associatedDotColor);
         textfield.onChange(async (value) => {
           this.plugin.writeOptions(() => ({ associatedDotColor: value }));
+        });
+      });
+  }
+
+  addShowAssociatedDotsForRangesSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Include date-range notes in dot")
+      .setDesc(
+        "Also show the associated note dot for notes matched only via a date-range property, not just exact date or link matches"
+      )
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.showAssociatedDotsForRanges);
+        toggle.onChange(async (value) => {
+          this.plugin.writeOptions(() => ({
+            showAssociatedDotsForRanges: value,
+          }));
         });
       });
   }

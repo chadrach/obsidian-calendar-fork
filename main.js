@@ -8,7 +8,6 @@ var obsidian__default = /*#__PURE__*/_interopDefaultLegacy(obsidian);
 
 const DEFAULT_WEEK_FORMAT = "gggg-[W]ww";
 const DEFAULT_WORDS_PER_DOT = 250;
-const DEFAULT_ASSOCIATED_DOT_COLOR = "#e9973f";
 const VIEW_TYPE_CALENDAR = "calendar";
 const TRIGGER_ON_OPEN = "calendar:open";
 
@@ -945,7 +944,10 @@ const defaultSettings = Object.freeze({
     wordsPerDot: DEFAULT_WORDS_PER_DOT,
     showTaskDots: true,
     showAssociatedDots: true,
-    associatedDotColor: DEFAULT_ASSOCIATED_DOT_COLOR,
+    // Empty string means "use the theme's --interactive-accent color"
+    associatedDotColor: "",
+    showAssociatedDotsForRanges: true,
+    autoRevealActiveNote: true,
     showAssociatedNotesPane: true,
     associatedDateProperties: "date",
     associatedStartProperty: "",
@@ -991,6 +993,7 @@ class CalendarSettingsTab extends obsidian.PluginSettingTab {
         this.addDotThresholdSetting();
         this.addWeekStartSetting();
         this.addConfirmCreateSetting();
+        this.addAutoRevealActiveNoteSetting();
         this.addShowWeeklyNoteSetting();
         this.containerEl.createEl("h3", {
             text: "Calendar Dots",
@@ -999,6 +1002,7 @@ class CalendarSettingsTab extends obsidian.PluginSettingTab {
         this.addShowAssociatedDotsSetting();
         if (this.plugin.options.showAssociatedDots) {
             this.addAssociatedDotColorSetting();
+            this.addShowAssociatedDotsForRangesSetting();
         }
         this.containerEl.createEl("h3", {
             text: "Associated Notes",
@@ -1082,6 +1086,17 @@ class CalendarSettingsTab extends obsidian.PluginSettingTab {
             });
         });
     }
+    addAutoRevealActiveNoteSetting() {
+        new obsidian.Setting(this.containerEl)
+            .setName("Follow active note")
+            .setDesc("When you switch to a daily or weekly note, automatically navigate the calendar to that date")
+            .addToggle((toggle) => {
+            toggle.setValue(this.plugin.options.autoRevealActiveNote);
+            toggle.onChange(async (value) => {
+                this.plugin.writeOptions(() => ({ autoRevealActiveNote: value }));
+            });
+        });
+    }
     addShowWeeklyNoteSetting() {
         new obsidian.Setting(this.containerEl)
             .setName("Show week number")
@@ -1120,12 +1135,25 @@ class CalendarSettingsTab extends obsidian.PluginSettingTab {
     addAssociatedDotColorSetting() {
         new obsidian.Setting(this.containerEl)
             .setName("Associated note dot color")
-            .setDesc("The color used for the associated note dots")
+            .setDesc("Any CSS color (hex, name, rgb(), etc). Leave blank to use your theme's accent color.")
             .addText((textfield) => {
-            textfield.inputEl.type = "color";
-            textfield.setValue(this.plugin.options.associatedDotColor || DEFAULT_ASSOCIATED_DOT_COLOR);
+            textfield.setPlaceholder("Theme accent color");
+            textfield.setValue(this.plugin.options.associatedDotColor);
             textfield.onChange(async (value) => {
                 this.plugin.writeOptions(() => ({ associatedDotColor: value }));
+            });
+        });
+    }
+    addShowAssociatedDotsForRangesSetting() {
+        new obsidian.Setting(this.containerEl)
+            .setName("Include date-range notes in dot")
+            .setDesc("Also show the associated note dot for notes matched only via a date-range property, not just exact date or link matches")
+            .addToggle((toggle) => {
+            toggle.setValue(this.plugin.options.showAssociatedDotsForRanges);
+            toggle.onChange(async (value) => {
+                this.plugin.writeOptions(() => ({
+                    showAssociatedDotsForRanges: value,
+                }));
             });
         });
     }
@@ -5212,10 +5240,14 @@ function showFileMenu(app, file, position) {
 
 const associatedNotesSource = {
     getDailyMetadata: async (date) => {
-        if (!get_store_value(settings).showAssociatedDots) {
+        const options = get_store_value(settings);
+        if (!options.showAssociatedDots) {
             return { dots: [] };
         }
-        const notes = getAssociatedNotes(get_store_value(associatedNotesIndex), date);
+        let notes = getAssociatedNotes(get_store_value(associatedNotesIndex), date);
+        if (!options.showAssociatedDotsForRanges) {
+            notes = notes.filter((note) => note.reason !== "range");
+        }
         if (!notes.length) {
             return { dots: [] };
         }
@@ -5435,11 +5467,19 @@ class CalendarView extends obsidian.ItemView {
         });
     }
     applyAssociatedDotColor() {
-        var _a;
+        var _a, _b;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const contentEl = this.contentEl;
-        if (contentEl && ((_a = this.settings) === null || _a === void 0 ? void 0 : _a.associatedDotColor)) {
-            contentEl.style.setProperty("--calendar-associated-dot-color", this.settings.associatedDotColor);
+        if (!contentEl) {
+            return;
+        }
+        const color = (_b = (_a = this.settings) === null || _a === void 0 ? void 0 : _a.associatedDotColor) === null || _b === void 0 ? void 0 : _b.trim();
+        if (color) {
+            contentEl.style.setProperty("--calendar-associated-dot-color", color);
+        }
+        else {
+            // Falls back to the theme's --interactive-accent color (see styles.css)
+            contentEl.style.removeProperty("--calendar-associated-dot-color");
         }
     }
     onMetadataResolved() {
@@ -5605,6 +5645,20 @@ class CalendarView extends obsidian.ItemView {
             this.updateActiveFile();
         }
     }
+    /**
+     * Resolve the date represented by a file, checking daily-note format
+     * first and falling back to the weekly-note format.
+     */
+    getRevealDate(file) {
+        const { moment } = window;
+        const dailyDate = getDateFromFile_1(file, "day");
+        if (dailyDate) {
+            return dailyDate;
+        }
+        const { format } = getWeeklyNoteSettings_1();
+        const weeklyDate = moment(file.basename, format, true);
+        return weeklyDate.isValid() ? weeklyDate : null;
+    }
     updateActiveFile() {
         const { view } = this.app.workspace.activeLeaf;
         let file = null;
@@ -5612,11 +5666,17 @@ class CalendarView extends obsidian.ItemView {
             file = view.file;
         }
         activeFile.setFile(file);
-        // Keep the associated notes pane in sync with the active daily note
         if (file) {
-            const date = getDateFromFile_1(file, "day");
-            if (date) {
-                selectedDate.set(date);
+            // Keep the associated notes pane in sync with the active daily note
+            const dailyDate = getDateFromFile_1(file, "day");
+            if (dailyDate) {
+                selectedDate.set(dailyDate);
+            }
+            if (this.settings.autoRevealActiveNote && this.calendar) {
+                const revealDate = dailyDate || this.getRevealDate(file);
+                if (revealDate) {
+                    this.calendar.$set({ displayedMonth: revealDate });
+                }
             }
         }
         if (this.calendar) {
@@ -5624,21 +5684,11 @@ class CalendarView extends obsidian.ItemView {
         }
     }
     revealActiveNote() {
-        const { moment } = window;
         const { activeLeaf } = this.app.workspace;
         if (activeLeaf.view instanceof obsidian.FileView) {
-            // Check to see if the active note is a daily-note
-            let date = getDateFromFile_1(activeLeaf.view.file, "day");
+            const date = this.getRevealDate(activeLeaf.view.file);
             if (date) {
                 this.calendar.$set({ displayedMonth: date });
-                return;
-            }
-            // Check to see if the active note is a weekly-note
-            const { format } = getWeeklyNoteSettings_1();
-            date = moment(activeLeaf.view.file.basename, format, true);
-            if (date.isValid()) {
-                this.calendar.$set({ displayedMonth: date });
-                return;
             }
         }
     }

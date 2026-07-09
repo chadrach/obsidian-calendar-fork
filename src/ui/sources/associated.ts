@@ -10,11 +10,15 @@ import { settings } from "../stores";
 
 export const associatedNotesSource: ICalendarSource = {
   getDailyMetadata: async (date: Moment): Promise<IDayMetadata> => {
-    if (!get(settings).showAssociatedDots) {
+    const options = get(settings);
+    if (!options.showAssociatedDots) {
       return { dots: [] };
     }
 
-    const notes = getAssociatedNotes(get(associatedNotesIndex), date);
+    let notes = getAssociatedNotes(get(associatedNotesIndex), date);
+    if (!options.showAssociatedDotsForRanges) {
+      notes = notes.filter((note) => note.reason !== "range");
+    }
     if (!notes.length) {
       return { dots: [] };
     }

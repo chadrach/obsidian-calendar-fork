@@ -106,11 +106,15 @@ export default class CalendarView extends ItemView {
   private applyAssociatedDotColor(): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const contentEl = (this as any).contentEl as HTMLElement;
-    if (contentEl && this.settings?.associatedDotColor) {
-      contentEl.style.setProperty(
-        "--calendar-associated-dot-color",
-        this.settings.associatedDotColor
-      );
+    if (!contentEl) {
+      return;
+    }
+    const color = this.settings?.associatedDotColor?.trim();
+    if (color) {
+      contentEl.style.setProperty("--calendar-associated-dot-color", color);
+    } else {
+      // Falls back to the theme's --interactive-accent color (see styles.css)
+      contentEl.style.removeProperty("--calendar-associated-dot-color");
     }
   }
 
@@ -328,6 +332,23 @@ export default class CalendarView extends ItemView {
     }
   }
 
+  /**
+   * Resolve the date represented by a file, checking daily-note format
+   * first and falling back to the weekly-note format.
+   */
+  private getRevealDate(file: TFile): Moment | null {
+    const { moment } = window;
+
+    const dailyDate = getDateFromFile(file, "day");
+    if (dailyDate) {
+      return dailyDate;
+    }
+
+    const { format } = getWeeklyNoteSettings();
+    const weeklyDate = moment(file.basename, format, true);
+    return weeklyDate.isValid() ? weeklyDate : null;
+  }
+
   private updateActiveFile(): void {
     const { view } = this.app.workspace.activeLeaf;
 
@@ -337,11 +358,18 @@ export default class CalendarView extends ItemView {
     }
     activeFile.setFile(file);
 
-    // Keep the associated notes pane in sync with the active daily note
     if (file) {
-      const date = getDateFromFile(file, "day");
-      if (date) {
-        selectedDate.set(date);
+      // Keep the associated notes pane in sync with the active daily note
+      const dailyDate = getDateFromFile(file, "day");
+      if (dailyDate) {
+        selectedDate.set(dailyDate);
+      }
+
+      if (this.settings.autoRevealActiveNote && this.calendar) {
+        const revealDate = dailyDate || this.getRevealDate(file);
+        if (revealDate) {
+          this.calendar.$set({ displayedMonth: revealDate });
+        }
       }
     }
 
@@ -351,23 +379,12 @@ export default class CalendarView extends ItemView {
   }
 
   public revealActiveNote(): void {
-    const { moment } = window;
     const { activeLeaf } = this.app.workspace;
 
     if (activeLeaf.view instanceof FileView) {
-      // Check to see if the active note is a daily-note
-      let date = getDateFromFile(activeLeaf.view.file, "day");
+      const date = this.getRevealDate(activeLeaf.view.file);
       if (date) {
         this.calendar.$set({ displayedMonth: date });
-        return;
-      }
-
-      // Check to see if the active note is a weekly-note
-      const { format } = getWeeklyNoteSettings();
-      date = moment(activeLeaf.view.file.basename, format, true);
-      if (date.isValid()) {
-        this.calendar.$set({ displayedMonth: date });
-        return;
       }
     }
   }
