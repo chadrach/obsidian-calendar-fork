@@ -15,9 +15,18 @@ import { tryToCreateWeeklyNote } from "src/io/weeklyNotes";
 import type { ISettings } from "src/settings";
 
 import Calendar from "./ui/Calendar.svelte";
+import AssociatedNotes from "./ui/AssociatedNotes.svelte";
+import { associatedNotesIndex } from "./ui/associatedNotes";
 import { showFileMenu } from "./ui/fileMenu";
-import { activeFile, dailyNotes, weeklyNotes, settings } from "./ui/stores";
 import {
+  activeFile,
+  dailyNotes,
+  weeklyNotes,
+  selectedDate,
+  settings,
+} from "./ui/stores";
+import {
+  associatedNotesSource,
   customTagsSource,
   streakSource,
   tasksSource,
@@ -26,7 +35,9 @@ import {
 
 export default class CalendarView extends ItemView {
   private calendar: Calendar;
+  private associatedNotesPane: AssociatedNotes;
   private settings: ISettings;
+  private reindexTimer: number;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -39,12 +50,18 @@ export default class CalendarView extends ItemView {
     this.onFileDeleted = this.onFileDeleted.bind(this);
     this.onFileModified = this.onFileModified.bind(this);
     this.onFileOpen = this.onFileOpen.bind(this);
+    this.onMetadataResolved = this.onMetadataResolved.bind(this);
 
     this.onHoverDay = this.onHoverDay.bind(this);
     this.onHoverWeek = this.onHoverWeek.bind(this);
+    this.onHoverAssociatedNote = this.onHoverAssociatedNote.bind(this);
 
     this.onContextMenuDay = this.onContextMenuDay.bind(this);
     this.onContextMenuWeek = this.onContextMenuWeek.bind(this);
+    this.onContextMenuAssociatedNote = this.onContextMenuAssociatedNote.bind(
+      this
+    );
+    this.openAssociatedNote = this.openAssociatedNote.bind(this);
 
     this.registerEvent(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,16 +74,55 @@ export default class CalendarView extends ItemView {
     this.registerEvent(this.app.vault.on("delete", this.onFileDeleted));
     this.registerEvent(this.app.vault.on("modify", this.onFileModified));
     this.registerEvent(this.app.workspace.on("file-open", this.onFileOpen));
+    this.registerEvent(
+      this.app.metadataCache.on("resolved", this.onMetadataResolved)
+    );
 
     this.settings = null;
     settings.subscribe((val) => {
+      const associationSettingsChanged =
+        this.settings &&
+        (this.settings.associatedDateProperties !==
+          val.associatedDateProperties ||
+          this.settings.associatedStartProperty !==
+            val.associatedStartProperty ||
+          this.settings.associatedEndProperty !== val.associatedEndProperty ||
+          this.settings.associatedIncludeLinks !== val.associatedIncludeLinks);
+
       this.settings = val;
+      this.applyAssociatedDotColor();
+
+      if (associationSettingsChanged) {
+        associatedNotesIndex.reindex();
+      }
 
       // Refresh the calendar if settings change
       if (this.calendar) {
         this.calendar.tick();
       }
     });
+  }
+
+  private applyAssociatedDotColor(): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const contentEl = (this as any).contentEl as HTMLElement;
+    if (contentEl && this.settings?.associatedDotColor) {
+      contentEl.style.setProperty(
+        "--calendar-associated-dot-color",
+        this.settings.associatedDotColor
+      );
+    }
+  }
+
+  private onMetadataResolved(): void {
+    // Debounce: `resolved` can fire in rapid succession while editing
+    window.clearTimeout(this.reindexTimer);
+    this.reindexTimer = window.setTimeout(() => {
+      associatedNotesIndex.reindex();
+      if (this.calendar) {
+        this.calendar.tick();
+      }
+    }, 500);
   }
 
   getViewType(): string {
@@ -82,8 +138,12 @@ export default class CalendarView extends ItemView {
   }
 
   onClose(): Promise<void> {
+    window.clearTimeout(this.reindexTimer);
     if (this.calendar) {
       this.calendar.$destroy();
+    }
+    if (this.associatedNotesPane) {
+      this.associatedNotesPane.$destroy();
     }
     return Promise.resolve();
   }
@@ -96,8 +156,14 @@ export default class CalendarView extends ItemView {
       streakSource,
       wordCountSource,
       tasksSource,
+      associatedNotesSource,
     ];
     this.app.workspace.trigger(TRIGGER_ON_OPEN, sources);
+
+    dailyNotes.reindex();
+    associatedNotesIndex.reindex();
+    selectedDate.set(window.moment());
+    this.applyAssociatedDotColor();
 
     this.calendar = new Calendar({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -110,6 +176,16 @@ export default class CalendarView extends ItemView {
         onContextMenuDay: this.onContextMenuDay,
         onContextMenuWeek: this.onContextMenuWeek,
         sources,
+      },
+    });
+
+    this.associatedNotesPane = new AssociatedNotes({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      target: (this as any).contentEl,
+      props: {
+        onClickNote: this.openAssociatedNote,
+        onHoverNote: this.onHoverAssociatedNote,
+        onContextMenuNote: this.onContextMenuAssociatedNote,
       },
     });
   }
@@ -150,6 +226,39 @@ export default class CalendarView extends ItemView {
       date.format(format),
       note?.path
     );
+  }
+
+  onHoverAssociatedNote(
+    note: TFile,
+    targetEl: EventTarget,
+    isMetaPressed: boolean
+  ): void {
+    if (!isMetaPressed) {
+      return;
+    }
+    this.app.workspace.trigger(
+      "link-hover",
+      this,
+      targetEl,
+      note.basename,
+      note.path
+    );
+  }
+
+  private onContextMenuAssociatedNote(note: TFile, event: MouseEvent): void {
+    showFileMenu(this.app, note, {
+      x: event.pageX,
+      y: event.pageY,
+    });
+  }
+
+  async openAssociatedNote(note: TFile, inNewSplit: boolean): Promise<void> {
+    const { workspace } = this.app;
+    const leaf = inNewSplit
+      ? workspace.splitActiveLeaf()
+      : workspace.getUnpinnedLeaf();
+    await leaf.openFile(note, { active: true });
+    workspace.setActiveLeaf(leaf, true, true);
   }
 
   private onContextMenuDay(date: Moment, event: MouseEvent): void {
@@ -228,6 +337,14 @@ export default class CalendarView extends ItemView {
     }
     activeFile.setFile(file);
 
+    // Keep the associated notes pane in sync with the active daily note
+    if (file) {
+      const date = getDateFromFile(file, "day");
+      if (date) {
+        selectedDate.set(date);
+      }
+    }
+
     if (this.calendar) {
       this.calendar.tick();
     }
@@ -287,6 +404,7 @@ export default class CalendarView extends ItemView {
     inNewSplit: boolean
   ): Promise<void> {
     const { workspace } = this.app;
+    selectedDate.set(date);
     const existingFile = getDailyNote(date, get(dailyNotes));
     if (!existingFile) {
       // File doesn't exist

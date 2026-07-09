@@ -2,6 +2,20 @@
 
 This plugin for [Obsidian](https://obsidian.md/) creates a simple Calendar view for visualizing and navigating between your daily notes.
 
+## Fork enhancements
+
+This fork adds an **Associated Notes** feature on top of the original plugin:
+
+- **Associated notes pane**: a pane underneath the calendar lists the notes associated with the currently selected date (selected by clicking a day, or by opening a daily note). A note is associated with a date if:
+  - it has a frontmatter date property matching the date (property names configurable, e.g. `date`),
+  - the date falls within a frontmatter date range (configurable start/end properties, e.g. `start-date`/`end-date`), or
+  - it contains a wikilink to that day's daily note.
+- **Card styling options**: notes can be displayed as cards (with an optional content preview) or as a compact list, with toggles for showing the folder path and the reason each note matched.
+- **Associated note dots**: days with associated notes get an extra filled dot in a configurable color, alongside the existing note dots and task circles.
+- **Task circle toggle**: the hollow circles representing incomplete tasks can now be turned off.
+
+All of these are configured in the plugin's settings under "Calendar Dots" and "Associated Notes".
+
 ![screenshot-full](https://raw.githubusercontent.com/liamcain/obsidian-calendar-plugin/master/images/screenshot-full.png)
 
 ## Usage

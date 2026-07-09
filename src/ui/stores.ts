@@ -1,3 +1,4 @@
+import type { Moment } from "moment";
 import type { TFile } from "obsidian";
 import {
   getAllDailyNotes,
@@ -70,3 +71,6 @@ function createSelectedFileStore() {
 }
 
 export const activeFile = createSelectedFileStore();
+
+// The date whose associated notes are shown in the pane below the calendar
+export const selectedDate = writable<Moment>(null);
