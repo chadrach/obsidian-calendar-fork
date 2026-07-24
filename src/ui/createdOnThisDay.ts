@@ -1,28 +1,26 @@
 import type { Moment } from "moment";
 import type { TFile } from "obsidian";
-import { getDailyNote } from "obsidian-daily-notes-interface";
-import { get, writable } from "svelte/store";
-
-import { dailyNotes } from "./stores";
+import { getDateFromFile } from "obsidian-daily-notes-interface";
+import { writable } from "svelte/store";
 
 export interface ICreatedOnThisDayIndex {
-  // key: "MM-DD"
-  byMonthDay: Record<string, TFile[]>;
+  // key: "YYYY-MM-DD"
+  byDate: Record<string, TFile[]>;
 }
 
 function buildIndex(): ICreatedOnThisDayIndex {
-  const index: ICreatedOnThisDayIndex = { byMonthDay: {} };
+  const index: ICreatedOnThisDayIndex = { byDate: {} };
 
   for (const file of window.app.vault.getMarkdownFiles()) {
-    const key = window.moment(file.stat.ctime).format("MM-DD");
-    (index.byMonthDay[key] = index.byMonthDay[key] || []).push(file);
+    const key = window.moment(file.stat.ctime).format("YYYY-MM-DD");
+    (index.byDate[key] = index.byDate[key] || []).push(file);
   }
 
   return index;
 }
 
 function createCreatedOnThisDayStore() {
-  const store = writable<ICreatedOnThisDayIndex>({ byMonthDay: {} });
+  const store = writable<ICreatedOnThisDayIndex>({ byDate: {} });
   return {
     reindex: () => {
       try {
@@ -45,14 +43,11 @@ export function getNotesCreatedOnThisDay(
     return [];
   }
 
-  const files = index.byMonthDay[date.format("MM-DD")] || [];
+  const files = index.byDate[date.format("YYYY-MM-DD")] || [];
 
-  // The selected date's own daily note is already the note being viewed,
-  // so exclude it from its own "created on this day" list. Daily notes
-  // from other years that share the same month/day are still included.
-  const ownDailyNote = getDailyNote(date, get(dailyNotes));
-
+  // Daily notes are trivially "created on this day" for their own date --
+  // exclude them all so this section only surfaces other notes.
   return files
-    .filter((file) => file.path !== ownDailyNote?.path)
+    .filter((file) => !getDateFromFile(file, "day"))
     .sort((a, b) => b.stat.ctime - a.stat.ctime);
 }

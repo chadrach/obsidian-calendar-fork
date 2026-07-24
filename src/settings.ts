@@ -409,7 +409,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Show 'Created on this day' section")
       .setDesc(
-        "Below the associated notes, list other notes (from any year) whose creation date falls on this day and month, based on each file's creation metadata"
+        "Below the associated notes, list other (non-daily) notes whose creation date matches the selected date exactly, based on each file's creation metadata"
       )
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.showCreatedOnThisDay);
@@ -467,7 +467,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Show match reason")
       .setDesc(
-        "Show a small tag on each note: the matching property, date range, or link for associated notes, or the creation year for 'Created on this day' notes"
+        "Show a small tag on each note: the matching property, date range, or link for associated notes, or the creation time for 'Created on this day' notes"
       )
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.showAssociatedNoteReason);

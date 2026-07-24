@@ -38,7 +38,7 @@
     $selectedDate
   ).map((file) => ({
     file,
-    badge: String(window.moment(file.stat.ctime).year()),
+    badge: window.moment(file.stat.ctime).format("h:mm A"),
   }));
 </script>
 

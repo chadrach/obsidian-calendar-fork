@@ -1228,7 +1228,7 @@ class CalendarSettingsTab extends obsidian.PluginSettingTab {
     addShowCreatedOnThisDaySetting() {
         new obsidian.Setting(this.containerEl)
             .setName("Show 'Created on this day' section")
-            .setDesc("Below the associated notes, list other notes (from any year) whose creation date falls on this day and month, based on each file's creation metadata")
+            .setDesc("Below the associated notes, list other (non-daily) notes whose creation date matches the selected date exactly, based on each file's creation metadata")
             .addToggle((toggle) => {
             toggle.setValue(this.plugin.options.showCreatedOnThisDay);
             toggle.onChange(async (value) => {
@@ -1280,7 +1280,7 @@ class CalendarSettingsTab extends obsidian.PluginSettingTab {
         }
         new obsidian.Setting(this.containerEl)
             .setName("Show match reason")
-            .setDesc("Show a small tag on each note: the matching property, date range, or link for associated notes, or the creation year for 'Created on this day' notes")
+            .setDesc("Show a small tag on each note: the matching property, date range, or link for associated notes, or the creation time for 'Created on this day' notes")
             .addToggle((toggle) => {
             toggle.setValue(this.plugin.options.showAssociatedNoteReason);
             toggle.onChange(async (value) => {
@@ -4623,15 +4623,15 @@ function getAssociatedNotes(index, date) {
 }
 
 function buildIndex() {
-    const index = { byMonthDay: {} };
+    const index = { byDate: {} };
     for (const file of window.app.vault.getMarkdownFiles()) {
-        const key = window.moment(file.stat.ctime).format("MM-DD");
-        (index.byMonthDay[key] = index.byMonthDay[key] || []).push(file);
+        const key = window.moment(file.stat.ctime).format("YYYY-MM-DD");
+        (index.byDate[key] = index.byDate[key] || []).push(file);
     }
     return index;
 }
 function createCreatedOnThisDayStore() {
-    const store = writable({ byMonthDay: {} });
+    const store = writable({ byDate: {} });
     return Object.assign({ reindex: () => {
             try {
                 store.set(buildIndex());
@@ -4646,13 +4646,11 @@ function getNotesCreatedOnThisDay(index, date) {
     if (!date) {
         return [];
     }
-    const files = index.byMonthDay[date.format("MM-DD")] || [];
-    // The selected date's own daily note is already the note being viewed,
-    // so exclude it from its own "created on this day" list. Daily notes
-    // from other years that share the same month/day are still included.
-    const ownDailyNote = getDailyNote_1(date, get_store_value(dailyNotes));
+    const files = index.byDate[date.format("YYYY-MM-DD")] || [];
+    // Daily notes are trivially "created on this day" for their own date --
+    // exclude them all so this section only surfaces other notes.
     return files
-        .filter((file) => file.path !== (ownDailyNote === null || ownDailyNote === void 0 ? void 0 : ownDailyNote.path))
+        .filter((file) => !getDateFromFile_1(file, "day"))
         .sort((a, b) => b.stat.ctime - a.stat.ctime);
 }
 
@@ -5541,7 +5539,7 @@ function instance($$self, $$props, $$invalidate) {
 		if ($$self.$$.dirty & /*$createdOnThisDayIndex, $selectedDate*/ 264) {
 			$$invalidate(5, createdOnThisDayItems = getNotesCreatedOnThisDay($createdOnThisDayIndex, $selectedDate).map(file => ({
 				file,
-				badge: String(window.moment(file.stat.ctime).year())
+				badge: window.moment(file.stat.ctime).format("h:mm A")
 			})));
 		}
 	};

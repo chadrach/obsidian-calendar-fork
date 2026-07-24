@@ -11,7 +11,7 @@ This fork is installed as a separate plugin (id `calendar-fork`) so it can coexi
   - the date falls within a frontmatter date range (configurable start/end properties, e.g. `start-date`/`end-date`), or
   - it contains a wikilink to that day's daily note.
 - **Card styling options**: notes can be displayed as cards (with an optional content preview) or as a compact list, with toggles for showing the folder path and the reason each note matched. These display options are shared with the "Created on this day" section below.
-- **Created on this day**: an optional section below the associated notes listing other notes — from any year — whose file creation date falls on the selected day and month (based on each file's creation metadata, not frontmatter). Handy for surfacing "on this day" memories, including past daily notes from other years.
+- **Created on this day**: an optional section below the associated notes listing other (non-daily) notes whose file creation date exactly matches the selected date (based on each file's creation metadata, not frontmatter).
 - **Associated note dots**: days with associated notes get an extra filled dot, alongside the existing note dots and task circles. The dot color defaults to your theme's accent color (`--interactive-accent`), or you can set a custom CSS color. Date-range matches can be excluded from the dot independently of the pane.
 - **Task circle toggle**: the hollow circles representing incomplete tasks can now be turned off.
 - **Follow active note**: the calendar automatically navigates to the month of whatever daily or weekly note is active in the editor (toggleable).

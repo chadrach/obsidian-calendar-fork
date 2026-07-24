@@ -1,13 +1,11 @@
 import moment from "moment";
 import { TFile } from "obsidian";
-import { getDateUID } from "obsidian-daily-notes-interface";
 import { get } from "svelte/store";
 
 import {
   createdOnThisDayIndex,
   getNotesCreatedOnThisDay,
 } from "./createdOnThisDay";
-import { dailyNotes } from "./stores";
 
 function createFile(path: string, ctime: number): TFile {
   const file = new TFile();
@@ -24,17 +22,21 @@ describe("createdOnThisDayIndex", () => {
     "daily/2026-07-09.md",
     moment("2026-07-09T09:00:00").valueOf()
   );
-  const sameDayLastYear = createFile(
+  const otherDailyNoteSameDate = createFile(
+    "old-daily/2026-07-09.md",
+    moment("2026-07-09T09:00:00").valueOf()
+  );
+  const morningNote = createFile(
+    "journal/Morning Pages.md",
+    moment("2026-07-09T07:00:00").valueOf()
+  );
+  const eveningNote = createFile(
+    "projects/Kickoff.md",
+    moment("2026-07-09T20:00:00").valueOf()
+  );
+  const sameMonthDayLastYear = createFile(
     "journal/Reflections.md",
     moment("2025-07-09T14:00:00").valueOf()
-  );
-  const sameDayTwoYearsAgo = createFile(
-    "projects/Kickoff.md",
-    moment("2024-07-09T08:00:00").valueOf()
-  );
-  const otherDailyNoteSameMonthDay = createFile(
-    "daily/2023-07-09.md",
-    moment("2023-07-09T09:00:00").valueOf()
   );
   const unrelatedNote = createFile(
     "projects/Unrelated.md",
@@ -44,9 +46,10 @@ describe("createdOnThisDayIndex", () => {
   beforeAll(() => {
     const files = [
       dailyNoteFile,
-      sameDayLastYear,
-      sameDayTwoYearsAgo,
-      otherDailyNoteSameMonthDay,
+      otherDailyNoteSameDate,
+      morningNote,
+      eveningNote,
+      sameMonthDayLastYear,
       unrelatedNote,
     ];
 
@@ -57,28 +60,33 @@ describe("createdOnThisDayIndex", () => {
       vault: {
         getMarkdownFiles: () => files,
       },
+      internalPlugins: {
+        getPluginById: () => ({
+          instance: {
+            options: { format: "YYYY-MM-DD", template: "", folder: "" },
+          },
+        }),
+      },
+      plugins: {
+        getPlugin: (): null => null,
+      },
     };
-
-    dailyNotes.set({
-      [getDateUID(moment("2026-07-09"), "day")]: dailyNoteFile,
-    });
 
     createdOnThisDayIndex.reindex();
   });
 
-  it("finds notes created on the same month/day across years, newest first", () => {
+  it("finds notes created on the exact selected date, newest first", () => {
     const notes = getNotesCreatedOnThisDay(
       get(createdOnThisDayIndex),
       moment("2026-07-09")
     );
     expect(notes.map((file) => file.path)).toEqual([
-      sameDayLastYear.path,
-      sameDayTwoYearsAgo.path,
-      otherDailyNoteSameMonthDay.path,
+      eveningNote.path,
+      morningNote.path,
     ]);
   });
 
-  it("excludes the selected date's own daily note", () => {
+  it("excludes daily notes, including ones outside the daily notes folder", () => {
     const notes = getNotesCreatedOnThisDay(
       get(createdOnThisDayIndex),
       moment("2026-07-09")
@@ -86,19 +94,30 @@ describe("createdOnThisDayIndex", () => {
     expect(
       notes.find((file) => file.path === dailyNoteFile.path)
     ).toBeUndefined();
+    expect(
+      notes.find((file) => file.path === otherDailyNoteSameDate.path)
+    ).toBeUndefined();
   });
 
-  it("includes past daily notes that share the month/day", () => {
+  it("does not match the same month/day from a different year", () => {
     const notes = getNotesCreatedOnThisDay(
       get(createdOnThisDayIndex),
       moment("2026-07-09")
     );
     expect(
-      notes.find((file) => file.path === otherDailyNoteSameMonthDay.path)
-    ).toBeDefined();
+      notes.find((file) => file.path === sameMonthDayLastYear.path)
+    ).toBeUndefined();
+
+    const lastYear = getNotesCreatedOnThisDay(
+      get(createdOnThisDayIndex),
+      moment("2025-07-09")
+    );
+    expect(lastYear.map((file) => file.path)).toEqual([
+      sameMonthDayLastYear.path,
+    ]);
   });
 
-  it("does not match notes created on a different month/day", () => {
+  it("does not match a different date", () => {
     const notes = getNotesCreatedOnThisDay(
       get(createdOnThisDayIndex),
       moment("2026-12-25")
