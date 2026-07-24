@@ -957,6 +957,7 @@ const defaultSettings = Object.freeze({
     showAssociatedNotePath: true,
     showAssociatedNotePreview: true,
     showAssociatedNoteReason: true,
+    showCreatedOnThisDay: true,
     showWeeklyNote: false,
     weeklyNoteFormat: "",
     weeklyNoteTemplate: "",
@@ -1015,7 +1016,9 @@ class CalendarSettingsTab extends obsidian.PluginSettingTab {
         this.addAssociatedDatePropertiesSetting();
         this.addAssociatedRangePropertiesSetting();
         this.addAssociatedIncludeLinksSetting();
-        if (this.plugin.options.showAssociatedNotesPane) {
+        this.addShowCreatedOnThisDaySetting();
+        if (this.plugin.options.showAssociatedNotesPane ||
+            this.plugin.options.showCreatedOnThisDay) {
             this.addAssociatedNoteStyleSetting();
             this.addAssociatedNoteInfoSettings();
         }
@@ -1222,6 +1225,18 @@ class CalendarSettingsTab extends obsidian.PluginSettingTab {
             });
         });
     }
+    addShowCreatedOnThisDaySetting() {
+        new obsidian.Setting(this.containerEl)
+            .setName("Show 'Created on this day' section")
+            .setDesc("Below the associated notes, list other notes (from any year) whose creation date falls on this day and month, based on each file's creation metadata")
+            .addToggle((toggle) => {
+            toggle.setValue(this.plugin.options.showCreatedOnThisDay);
+            toggle.onChange(async (value) => {
+                this.plugin.writeOptions(() => ({ showCreatedOnThisDay: value }));
+                this.display(); // show/hide the shared display settings
+            });
+        });
+    }
     addAssociatedNoteStyleSetting() {
         new obsidian.Setting(this.containerEl)
             .setName("Note display style")
@@ -1265,7 +1280,7 @@ class CalendarSettingsTab extends obsidian.PluginSettingTab {
         }
         new obsidian.Setting(this.containerEl)
             .setName("Show match reason")
-            .setDesc("Show a tag explaining why each note is associated with the date (the matching property, date range, or link)")
+            .setDesc("Show a small tag on each note: the matching property, date range, or link for associated notes, or the creation year for 'Created on this day' notes")
             .addToggle((toggle) => {
             toggle.setValue(this.plugin.options.showAssociatedNoteReason);
             toggle.onChange(async (value) => {
@@ -2292,7 +2307,7 @@ function create_else_block$2(ctx) {
 }
 
 // (7:0) {#if metadata}
-function create_if_block$1(ctx) {
+function create_if_block$1$1(ctx) {
 	let await_block_anchor;
 	let promise;
 	let current;
@@ -2423,7 +2438,7 @@ function create_fragment$5(ctx) {
 	let if_block;
 	let if_block_anchor;
 	let current;
-	const if_block_creators = [create_if_block$1, create_else_block$2];
+	const if_block_creators = [create_if_block$1$1, create_else_block$2];
 	const if_blocks = [];
 
 	function select_block_type(ctx, dirty) {
@@ -2969,7 +2984,7 @@ function add_css$2() {
 	append(document.head, style);
 }
 
-function create_fragment$2(ctx) {
+function create_fragment$2$1(ctx) {
 	let div2;
 	let h3;
 	let span0;
@@ -3093,7 +3108,7 @@ function create_fragment$2(ctx) {
 	};
 }
 
-function instance$2($$self, $$props, $$invalidate) {
+function instance$2$1($$self, $$props, $$invalidate) {
 	
 	let { displayedMonth } = $$props;
 	let { today } = $$props;
@@ -3131,7 +3146,7 @@ class Nav extends SvelteComponent {
 		super();
 		if (!document.getElementById("svelte-1vwr9dd-style")) add_css$2();
 
-		init(this, options, instance$2, create_fragment$2, safe_not_equal, {
+		init(this, options, instance$2$1, create_fragment$2$1, safe_not_equal, {
 			displayedMonth: 0,
 			today: 6,
 			resetDisplayedMonth: 1,
@@ -3502,7 +3517,7 @@ function get_each_context_3(ctx, list, i) {
 }
 
 // (55:6) {#if showWeekNums}
-function create_if_block_2$1(ctx) {
+function create_if_block_2$2(ctx) {
 	let col;
 
 	return {
@@ -3543,7 +3558,7 @@ function create_each_block_3(ctx) {
 }
 
 // (64:8) {#if showWeekNums}
-function create_if_block_1$1(ctx) {
+function create_if_block_1$2(ctx) {
 	let th;
 
 	return {
@@ -3849,7 +3864,7 @@ function create_fragment$7(ctx) {
 			}
 		});
 
-	let if_block0 = /*showWeekNums*/ ctx[1] && create_if_block_2$1();
+	let if_block0 = /*showWeekNums*/ ctx[1] && create_if_block_2$2();
 	let each_value_3 = /*month*/ ctx[14][1].days;
 	let each_blocks_2 = [];
 
@@ -3857,7 +3872,7 @@ function create_fragment$7(ctx) {
 		each_blocks_2[i] = create_each_block_3(get_each_context_3(ctx, each_value_3, i));
 	}
 
-	let if_block1 = /*showWeekNums*/ ctx[1] && create_if_block_1$1();
+	let if_block1 = /*showWeekNums*/ ctx[1] && create_if_block_1$2();
 	let each_value_2 = /*daysOfWeek*/ ctx[15];
 	let each_blocks_1 = [];
 
@@ -3950,7 +3965,7 @@ function create_fragment$7(ctx) {
 
 			if (/*showWeekNums*/ ctx[1]) {
 				if (if_block0) ; else {
-					if_block0 = create_if_block_2$1();
+					if_block0 = create_if_block_2$2();
 					if_block0.c();
 					if_block0.m(colgroup, t1);
 				}
@@ -3984,7 +3999,7 @@ function create_fragment$7(ctx) {
 
 			if (/*showWeekNums*/ ctx[1]) {
 				if (if_block1) ; else {
-					if_block1 = create_if_block_1$1();
+					if_block1 = create_if_block_1$2();
 					if_block1.c();
 					if_block1.m(tr, t3);
 				}
@@ -4255,7 +4270,7 @@ function configureGlobalMomentLocale(localeOverride = "system-default", weekStar
 
 /* src/ui/Calendar.svelte generated by Svelte v3.35.0 */
 
-function create_fragment$1(ctx) {
+function create_fragment$2(ctx) {
 	let calendarbase;
 	let updating_displayedMonth;
 	let current;
@@ -4330,7 +4345,7 @@ function create_fragment$1(ctx) {
 	};
 }
 
-function instance$1($$self, $$props, $$invalidate) {
+function instance$2($$self, $$props, $$invalidate) {
 	let $settings;
 	let $activeFile;
 	component_subscribe($$self, settings, $$value => $$invalidate(8, $settings = $$value));
@@ -4420,7 +4435,7 @@ class Calendar extends SvelteComponent$1 {
 	constructor(options) {
 		super();
 
-		init$1(this, options, instance$1, create_fragment$1, not_equal$1, {
+		init$1(this, options, instance$2, create_fragment$2, not_equal$1, {
 			displayedMonth: 0,
 			sources: 1,
 			onHoverDay: 2,
@@ -4478,7 +4493,7 @@ function addAssociation(index, dateUID, note) {
         notes.push(note);
     }
 }
-function buildIndex() {
+function buildIndex$1() {
     var _a;
     const index = { byDateUID: {}, ranges: [] };
     const { metadataCache, vault } = window.app;
@@ -4574,7 +4589,7 @@ function createAssociatedNotesStore() {
     const store = writable({ byDateUID: {}, ranges: [] });
     return Object.assign({ reindex: () => {
             try {
-                store.set(buildIndex());
+                store.set(buildIndex$1());
             }
             catch (err) {
                 console.error("[Calendar] Failed to index associated notes", err);
@@ -4607,95 +4622,55 @@ function getAssociatedNotes(index, date) {
         .sort((a, b) => b.file.stat.mtime - a.file.stat.mtime);
 }
 
-/* src/ui/AssociatedNotes.svelte generated by Svelte v3.35.0 */
+function buildIndex() {
+    const index = { byMonthDay: {} };
+    for (const file of window.app.vault.getMarkdownFiles()) {
+        const key = window.moment(file.stat.ctime).format("MM-DD");
+        (index.byMonthDay[key] = index.byMonthDay[key] || []).push(file);
+    }
+    return index;
+}
+function createCreatedOnThisDayStore() {
+    const store = writable({ byMonthDay: {} });
+    return Object.assign({ reindex: () => {
+            try {
+                store.set(buildIndex());
+            }
+            catch (err) {
+                console.error("[Calendar] Failed to index note creation dates", err);
+            }
+        } }, store);
+}
+const createdOnThisDayIndex = createCreatedOnThisDayStore();
+function getNotesCreatedOnThisDay(index, date) {
+    if (!date) {
+        return [];
+    }
+    const files = index.byMonthDay[date.format("MM-DD")] || [];
+    // The selected date's own daily note is already the note being viewed,
+    // so exclude it from its own "created on this day" list. Daily notes
+    // from other years that share the same month/day are still included.
+    const ownDailyNote = getDailyNote_1(date, get_store_value(dailyNotes));
+    return files
+        .filter((file) => file.path !== (ownDailyNote === null || ownDailyNote === void 0 ? void 0 : ownDailyNote.path))
+        .sort((a, b) => b.stat.ctime - a.stat.ctime);
+}
+
+/* src/ui/NoteListSection.svelte generated by Svelte v3.35.0 */
 
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[12] = list[i];
+	child_ctx[15] = list[i];
 	return child_ctx;
 }
 
-// (51:0) {#if $settings.showAssociatedNotesPane && $selectedDate}
-function create_if_block(ctx) {
-	let div1;
-	let div0;
-	let span0;
-	let t0;
-	let t1_value = /*$selectedDate*/ ctx[3].format("ll") + "";
-	let t1;
-	let t2;
-	let span1;
-	let t3_value = /*notes*/ ctx[4].length + "";
-	let t3;
-	let t4;
-
-	function select_block_type(ctx, dirty) {
-		if (/*notes*/ ctx[4].length === 0) return create_if_block_1;
-		return create_else_block;
-	}
-
-	let current_block_type = select_block_type(ctx);
-	let if_block = current_block_type(ctx);
-
-	return {
-		c() {
-			div1 = element$1("div");
-			div0 = element$1("div");
-			span0 = element$1("span");
-			t0 = text$1("Notes for ");
-			t1 = text$1(t1_value);
-			t2 = space$1();
-			span1 = element$1("span");
-			t3 = text$1(t3_value);
-			t4 = space$1();
-			if_block.c();
-			attr$1(span0, "class", "associated-notes-heading");
-			attr$1(span1, "class", "associated-notes-count");
-			attr$1(div0, "class", "associated-notes-header");
-			attr$1(div1, "class", "associated-notes-pane");
-		},
-		m(target, anchor) {
-			insert$1(target, div1, anchor);
-			append$1(div1, div0);
-			append$1(div0, span0);
-			append$1(span0, t0);
-			append$1(span0, t1);
-			append$1(div0, t2);
-			append$1(div0, span1);
-			append$1(span1, t3);
-			append$1(div1, t4);
-			if_block.m(div1, null);
-		},
-		p(ctx, dirty) {
-			if (dirty & /*$selectedDate*/ 8 && t1_value !== (t1_value = /*$selectedDate*/ ctx[3].format("ll") + "")) set_data$1(t1, t1_value);
-			if (dirty & /*notes*/ 16 && t3_value !== (t3_value = /*notes*/ ctx[4].length + "")) set_data$1(t3, t3_value);
-
-			if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block) {
-				if_block.p(ctx, dirty);
-			} else {
-				if_block.d(1);
-				if_block = current_block_type(ctx);
-
-				if (if_block) {
-					if_block.c();
-					if_block.m(div1, null);
-				}
-			}
-		},
-		d(detaching) {
-			if (detaching) detach$1(div1);
-			if_block.d();
-		}
-	};
-}
-
-// (61:4) {:else}
+// (56:2) {:else}
 function create_else_block(ctx) {
 	let div;
 	let each_blocks = [];
 	let each_1_lookup = new Map();
-	let each_value = /*notes*/ ctx[4];
-	const get_key = ctx => /*note*/ ctx[12].file.path;
+	let each_value = /*items*/ ctx[1];
+	const get_key = ctx => /*item*/ ctx[15].file.path;
 
 	for (let i = 0; i < each_value.length; i += 1) {
 		let child_ctx = get_each_context(ctx, each_value, i);
@@ -4712,7 +4687,7 @@ function create_else_block(ctx) {
 			}
 
 			attr$1(div, "class", "associated-notes-list");
-			toggle_class$1(div, "is-compact", /*$settings*/ ctx[5].associatedNoteStyle === "compact");
+			toggle_class$1(div, "is-compact", /*style*/ ctx[6] === "compact");
 		},
 		m(target, anchor) {
 			insert$1(target, div, anchor);
@@ -4722,13 +4697,13 @@ function create_else_block(ctx) {
 			}
 		},
 		p(ctx, dirty) {
-			if (dirty & /*onClickNote, notes, isMetaPressed, onHoverNote, onContextMenuNote, getExcerpt, $settings, getFolder, getReasonLabel*/ 119) {
-				each_value = /*notes*/ ctx[4];
+			if (dirty & /*onClickNote, items, isMetaPressed, onHoverNote, onContextMenuNote, getExcerpt, showPreview, style, getFolder, showPath, showBadge*/ 2042) {
+				each_value = /*items*/ ctx[1];
 				each_blocks = update_keyed_each$1(each_blocks, dirty, get_key, 1, ctx, each_value, each_1_lookup, div, destroy_block, create_each_block, null, get_each_context);
 			}
 
-			if (dirty & /*$settings*/ 32) {
-				toggle_class$1(div, "is-compact", /*$settings*/ ctx[5].associatedNoteStyle === "compact");
+			if (dirty & /*style*/ 64) {
+				toggle_class$1(div, "is-compact", /*style*/ ctx[6] === "compact");
 			}
 		},
 		d(detaching) {
@@ -4741,30 +4716,34 @@ function create_else_block(ctx) {
 	};
 }
 
-// (59:4) {#if notes.length === 0}
-function create_if_block_1(ctx) {
+// (54:2) {#if items.length === 0}
+function create_if_block$1(ctx) {
 	let div;
+	let t;
 
 	return {
 		c() {
 			div = element$1("div");
-			div.textContent = "No associated notes";
+			t = text$1(/*emptyMessage*/ ctx[2]);
 			attr$1(div, "class", "associated-notes-empty");
 		},
 		m(target, anchor) {
 			insert$1(target, div, anchor);
+			append$1(div, t);
 		},
-		p: noop$1,
+		p(ctx, dirty) {
+			if (dirty & /*emptyMessage*/ 4) set_data$1(t, /*emptyMessage*/ ctx[2]);
+		},
 		d(detaching) {
 			if (detaching) detach$1(div);
 		}
 	};
 }
 
-// (76:14) {#if $settings.showAssociatedNoteReason}
-function create_if_block_5(ctx) {
+// (71:12) {#if showBadge}
+function create_if_block_4(ctx) {
 	let span;
-	let t_value = getReasonLabel(/*note*/ ctx[12]) + "";
+	let t_value = /*item*/ ctx[15].badge + "";
 	let t;
 
 	return {
@@ -4778,7 +4757,7 @@ function create_if_block_5(ctx) {
 			append$1(span, t);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*notes*/ 16 && t_value !== (t_value = getReasonLabel(/*note*/ ctx[12]) + "")) set_data$1(t, t_value);
+			if (dirty & /*items*/ 2 && t_value !== (t_value = /*item*/ ctx[15].badge + "")) set_data$1(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) detach$1(span);
@@ -4786,10 +4765,10 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (80:12) {#if $settings.showAssociatedNotePath && getFolder(note.file)}
-function create_if_block_4(ctx) {
+// (75:10) {#if showPath && getFolder(item.file)}
+function create_if_block_3(ctx) {
 	let div;
-	let t_value = getFolder(/*note*/ ctx[12].file) + "";
+	let t_value = getFolder(/*item*/ ctx[15].file) + "";
 	let t;
 
 	return {
@@ -4803,7 +4782,7 @@ function create_if_block_4(ctx) {
 			append$1(div, t);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*notes*/ 16 && t_value !== (t_value = getFolder(/*note*/ ctx[12].file) + "")) set_data$1(t, t_value);
+			if (dirty & /*items*/ 2 && t_value !== (t_value = getFolder(/*item*/ ctx[15].file) + "")) set_data$1(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) detach$1(div);
@@ -4811,8 +4790,8 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (83:12) {#if $settings.showAssociatedNotePreview && $settings.associatedNoteStyle === "card"}
-function create_if_block_2(ctx) {
+// (78:10) {#if showPreview && style === "card"}
+function create_if_block_1$1(ctx) {
 	let await_block_anchor;
 	let promise;
 
@@ -4824,10 +4803,10 @@ function create_if_block_2(ctx) {
 		pending: create_pending_block,
 		then: create_then_block,
 		catch: create_catch_block,
-		value: 15
+		value: 18
 	};
 
-	handle_promise$1(promise = /*getExcerpt*/ ctx[6](/*note*/ ctx[12].file), info);
+	handle_promise$1(promise = /*getExcerpt*/ ctx[10](/*item*/ ctx[15].file), info);
 
 	return {
 		c() {
@@ -4844,9 +4823,9 @@ function create_if_block_2(ctx) {
 			ctx = new_ctx;
 			info.ctx = ctx;
 
-			if (dirty & /*notes*/ 16 && promise !== (promise = /*getExcerpt*/ ctx[6](/*note*/ ctx[12].file)) && handle_promise$1(promise, info)) ; else {
+			if (dirty & /*items*/ 2 && promise !== (promise = /*getExcerpt*/ ctx[10](/*item*/ ctx[15].file)) && handle_promise$1(promise, info)) ; else {
 				const child_ctx = ctx.slice();
-				child_ctx[15] = info.resolved;
+				child_ctx[18] = info.resolved;
 				info.block.p(child_ctx, dirty);
 			}
 		},
@@ -4864,10 +4843,10 @@ function create_catch_block(ctx) {
 	return { c: noop$1, m: noop$1, p: noop$1, d: noop$1 };
 }
 
-// (84:57)                  {#if excerpt}
+// (79:55)                {#if excerpt}
 function create_then_block(ctx) {
 	let if_block_anchor;
-	let if_block = /*excerpt*/ ctx[15] && create_if_block_3(ctx);
+	let if_block = /*excerpt*/ ctx[18] && create_if_block_2$1(ctx);
 
 	return {
 		c() {
@@ -4879,11 +4858,11 @@ function create_then_block(ctx) {
 			insert$1(target, if_block_anchor, anchor);
 		},
 		p(ctx, dirty) {
-			if (/*excerpt*/ ctx[15]) {
+			if (/*excerpt*/ ctx[18]) {
 				if (if_block) {
 					if_block.p(ctx, dirty);
 				} else {
-					if_block = create_if_block_3(ctx);
+					if_block = create_if_block_2$1(ctx);
 					if_block.c();
 					if_block.m(if_block_anchor.parentNode, if_block_anchor);
 				}
@@ -4899,10 +4878,10 @@ function create_then_block(ctx) {
 	};
 }
 
-// (85:16) {#if excerpt}
-function create_if_block_3(ctx) {
+// (80:14) {#if excerpt}
+function create_if_block_2$1(ctx) {
 	let div;
-	let t_value = /*excerpt*/ ctx[15] + "";
+	let t_value = /*excerpt*/ ctx[18] + "";
 	let t;
 
 	return {
@@ -4916,7 +4895,7 @@ function create_if_block_3(ctx) {
 			append$1(div, t);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*notes*/ 16 && t_value !== (t_value = /*excerpt*/ ctx[15] + "")) set_data$1(t, t_value);
+			if (dirty & /*items*/ 2 && t_value !== (t_value = /*excerpt*/ ctx[18] + "")) set_data$1(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) detach$1(div);
@@ -4929,34 +4908,34 @@ function create_pending_block(ctx) {
 	return { c: noop$1, m: noop$1, p: noop$1, d: noop$1 };
 }
 
-// (66:8) {#each notes as note (note.file.path)}
+// (61:6) {#each items as item (item.file.path)}
 function create_each_block(key_1, ctx) {
 	let div1;
 	let div0;
 	let span;
-	let t0_value = /*note*/ ctx[12].file.basename + "";
+	let t0_value = /*item*/ ctx[15].file.basename + "";
 	let t0;
 	let t1;
 	let t2;
-	let show_if = /*$settings*/ ctx[5].showAssociatedNotePath && getFolder(/*note*/ ctx[12].file);
+	let show_if = /*showPath*/ ctx[4] && getFolder(/*item*/ ctx[15].file);
 	let t3;
 	let t4;
 	let mounted;
 	let dispose;
-	let if_block0 = /*$settings*/ ctx[5].showAssociatedNoteReason && create_if_block_5(ctx);
-	let if_block1 = show_if && create_if_block_4(ctx);
-	let if_block2 = /*$settings*/ ctx[5].showAssociatedNotePreview && /*$settings*/ ctx[5].associatedNoteStyle === "card" && create_if_block_2(ctx);
+	let if_block0 = /*showBadge*/ ctx[3] && create_if_block_4(ctx);
+	let if_block1 = show_if && create_if_block_3(ctx);
+	let if_block2 = /*showPreview*/ ctx[5] && /*style*/ ctx[6] === "card" && create_if_block_1$1(ctx);
 
 	function click_handler(...args) {
-		return /*click_handler*/ ctx[8](/*note*/ ctx[12], ...args);
+		return /*click_handler*/ ctx[11](/*item*/ ctx[15], ...args);
 	}
 
 	function mouseover_handler(...args) {
-		return /*mouseover_handler*/ ctx[9](/*note*/ ctx[12], ...args);
+		return /*mouseover_handler*/ ctx[12](/*item*/ ctx[15], ...args);
 	}
 
 	function contextmenu_handler(...args) {
-		return /*contextmenu_handler*/ ctx[10](/*note*/ ctx[12], ...args);
+		return /*contextmenu_handler*/ ctx[13](/*item*/ ctx[15], ...args);
 	}
 
 	return {
@@ -5004,13 +4983,13 @@ function create_each_block(key_1, ctx) {
 		},
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
-			if (dirty & /*notes*/ 16 && t0_value !== (t0_value = /*note*/ ctx[12].file.basename + "")) set_data$1(t0, t0_value);
+			if (dirty & /*items*/ 2 && t0_value !== (t0_value = /*item*/ ctx[15].file.basename + "")) set_data$1(t0, t0_value);
 
-			if (/*$settings*/ ctx[5].showAssociatedNoteReason) {
+			if (/*showBadge*/ ctx[3]) {
 				if (if_block0) {
 					if_block0.p(ctx, dirty);
 				} else {
-					if_block0 = create_if_block_5(ctx);
+					if_block0 = create_if_block_4(ctx);
 					if_block0.c();
 					if_block0.m(div0, null);
 				}
@@ -5019,13 +4998,13 @@ function create_each_block(key_1, ctx) {
 				if_block0 = null;
 			}
 
-			if (dirty & /*$settings, notes*/ 48) show_if = /*$settings*/ ctx[5].showAssociatedNotePath && getFolder(/*note*/ ctx[12].file);
+			if (dirty & /*showPath, items*/ 18) show_if = /*showPath*/ ctx[4] && getFolder(/*item*/ ctx[15].file);
 
 			if (show_if) {
 				if (if_block1) {
 					if_block1.p(ctx, dirty);
 				} else {
-					if_block1 = create_if_block_4(ctx);
+					if_block1 = create_if_block_3(ctx);
 					if_block1.c();
 					if_block1.m(div1, t3);
 				}
@@ -5034,11 +5013,11 @@ function create_each_block(key_1, ctx) {
 				if_block1 = null;
 			}
 
-			if (/*$settings*/ ctx[5].showAssociatedNotePreview && /*$settings*/ ctx[5].associatedNoteStyle === "card") {
+			if (/*showPreview*/ ctx[5] && /*style*/ ctx[6] === "card") {
 				if (if_block2) {
 					if_block2.p(ctx, dirty);
 				} else {
-					if_block2 = create_if_block_2(ctx);
+					if_block2 = create_if_block_1$1(ctx);
 					if_block2.c();
 					if_block2.m(div1, t4);
 				}
@@ -5058,38 +5037,73 @@ function create_each_block(key_1, ctx) {
 	};
 }
 
-function create_fragment(ctx) {
-	let if_block_anchor;
-	let if_block = /*$settings*/ ctx[5].showAssociatedNotesPane && /*$selectedDate*/ ctx[3] && create_if_block(ctx);
+function create_fragment$1(ctx) {
+	let div1;
+	let div0;
+	let span0;
+	let t0;
+	let t1;
+	let span1;
+	let t2_value = /*items*/ ctx[1].length + "";
+	let t2;
+	let t3;
+
+	function select_block_type(ctx, dirty) {
+		if (/*items*/ ctx[1].length === 0) return create_if_block$1;
+		return create_else_block;
+	}
+
+	let current_block_type = select_block_type(ctx);
+	let if_block = current_block_type(ctx);
 
 	return {
 		c() {
-			if (if_block) if_block.c();
-			if_block_anchor = empty$1();
+			div1 = element$1("div");
+			div0 = element$1("div");
+			span0 = element$1("span");
+			t0 = text$1(/*heading*/ ctx[0]);
+			t1 = space$1();
+			span1 = element$1("span");
+			t2 = text$1(t2_value);
+			t3 = space$1();
+			if_block.c();
+			attr$1(span0, "class", "associated-notes-heading");
+			attr$1(span1, "class", "associated-notes-count");
+			attr$1(div0, "class", "associated-notes-header");
+			attr$1(div1, "class", "associated-notes-section");
 		},
 		m(target, anchor) {
-			if (if_block) if_block.m(target, anchor);
-			insert$1(target, if_block_anchor, anchor);
+			insert$1(target, div1, anchor);
+			append$1(div1, div0);
+			append$1(div0, span0);
+			append$1(span0, t0);
+			append$1(div0, t1);
+			append$1(div0, span1);
+			append$1(span1, t2);
+			append$1(div1, t3);
+			if_block.m(div1, null);
 		},
 		p(ctx, [dirty]) {
-			if (/*$settings*/ ctx[5].showAssociatedNotesPane && /*$selectedDate*/ ctx[3]) {
-				if (if_block) {
-					if_block.p(ctx, dirty);
-				} else {
-					if_block = create_if_block(ctx);
-					if_block.c();
-					if_block.m(if_block_anchor.parentNode, if_block_anchor);
-				}
-			} else if (if_block) {
+			if (dirty & /*heading*/ 1) set_data$1(t0, /*heading*/ ctx[0]);
+			if (dirty & /*items*/ 2 && t2_value !== (t2_value = /*items*/ ctx[1].length + "")) set_data$1(t2, t2_value);
+
+			if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block) {
+				if_block.p(ctx, dirty);
+			} else {
 				if_block.d(1);
-				if_block = null;
+				if_block = current_block_type(ctx);
+
+				if (if_block) {
+					if_block.c();
+					if_block.m(div1, null);
+				}
 			}
 		},
 		i: noop$1,
 		o: noop$1,
 		d(detaching) {
-			if (if_block) if_block.d(detaching);
-			if (detaching) detach$1(if_block_anchor);
+			if (detaching) detach$1(div1);
+			if_block.d();
 		}
 	};
 }
@@ -5098,32 +5112,17 @@ function isMetaPressed(event) {
 	return event.ctrlKey || event.metaKey;
 }
 
-function getFolder(note) {
+function getFolder(file) {
 	var _a;
 
-	const folder = (_a = note.parent) === null || _a === void 0
+	const folder = (_a = file.parent) === null || _a === void 0
 	? void 0
 	: _a.path;
 
 	return folder && folder !== "/" ? folder : "";
 }
 
-function getReasonLabel(note) {
-	if (note.reason === "link") {
-		return "🔗 link";
-	}
-
-	return note.detail;
-}
-
-function instance($$self, $$props, $$invalidate) {
-	let $associatedNotesIndex;
-	let $selectedDate;
-	let $settings;
-	component_subscribe($$self, associatedNotesIndex, $$value => $$invalidate(7, $associatedNotesIndex = $$value));
-	component_subscribe($$self, selectedDate, $$value => $$invalidate(3, $selectedDate = $$value));
-	component_subscribe($$self, settings, $$value => $$invalidate(5, $settings = $$value));
-
+function instance$1($$self, $$props, $$invalidate) {
 	var __awaiter = this && this.__awaiter || function (thisArg, _arguments, P, generator) {
 		function adopt(value) {
 			return value instanceof P
@@ -5162,14 +5161,21 @@ function instance($$self, $$props, $$invalidate) {
 
 	
 	
+	
+	let { heading } = $$props;
+	let { items = [] } = $$props;
+	let { emptyMessage } = $$props;
+	let { showBadge } = $$props;
+	let { showPath } = $$props;
+	let { showPreview } = $$props;
+	let { style } = $$props;
 	let { onClickNote } = $$props;
 	let { onHoverNote } = $$props;
 	let { onContextMenuNote } = $$props;
-	let notes = [];
 
-	function getExcerpt(note) {
+	function getExcerpt(file) {
 		return __awaiter(this, void 0, void 0, function* () {
-			const contents = yield window.app.vault.cachedRead(note);
+			const contents = yield window.app.vault.cachedRead(file);
 
 			const excerpt = contents.replace(/^---\r?\n[\s\S]*?\r?\n---/, "").replace(/```[\s\S]*?```/g, " ").replace(/!\[\[[^\]]*\]\]/g, " ").replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, "$1").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/^#+\s+/gm, "").replace(/[*_`>~]/g, "").replace(/\s+/g, " ").trim(); // strip frontmatter
 			// embeds
@@ -5182,9 +5188,341 @@ function instance($$self, $$props, $$invalidate) {
 		});
 	}
 
-	const click_handler = (note, event) => onClickNote(note.file, isMetaPressed(event));
-	const mouseover_handler = (note, event) => onHoverNote(note.file, event.target, isMetaPressed(event));
-	const contextmenu_handler = (note, event) => onContextMenuNote(note.file, event);
+	const click_handler = (item, event) => onClickNote(item.file, isMetaPressed(event));
+	const mouseover_handler = (item, event) => onHoverNote(item.file, event.target, isMetaPressed(event));
+	const contextmenu_handler = (item, event) => onContextMenuNote(item.file, event);
+
+	$$self.$$set = $$props => {
+		if ("heading" in $$props) $$invalidate(0, heading = $$props.heading);
+		if ("items" in $$props) $$invalidate(1, items = $$props.items);
+		if ("emptyMessage" in $$props) $$invalidate(2, emptyMessage = $$props.emptyMessage);
+		if ("showBadge" in $$props) $$invalidate(3, showBadge = $$props.showBadge);
+		if ("showPath" in $$props) $$invalidate(4, showPath = $$props.showPath);
+		if ("showPreview" in $$props) $$invalidate(5, showPreview = $$props.showPreview);
+		if ("style" in $$props) $$invalidate(6, style = $$props.style);
+		if ("onClickNote" in $$props) $$invalidate(7, onClickNote = $$props.onClickNote);
+		if ("onHoverNote" in $$props) $$invalidate(8, onHoverNote = $$props.onHoverNote);
+		if ("onContextMenuNote" in $$props) $$invalidate(9, onContextMenuNote = $$props.onContextMenuNote);
+	};
+
+	return [
+		heading,
+		items,
+		emptyMessage,
+		showBadge,
+		showPath,
+		showPreview,
+		style,
+		onClickNote,
+		onHoverNote,
+		onContextMenuNote,
+		getExcerpt,
+		click_handler,
+		mouseover_handler,
+		contextmenu_handler
+	];
+}
+
+class NoteListSection extends SvelteComponent$1 {
+	constructor(options) {
+		super();
+
+		init$1(this, options, instance$1, create_fragment$1, safe_not_equal$1, {
+			heading: 0,
+			items: 1,
+			emptyMessage: 2,
+			showBadge: 3,
+			showPath: 4,
+			showPreview: 5,
+			style: 6,
+			onClickNote: 7,
+			onHoverNote: 8,
+			onContextMenuNote: 9
+		});
+	}
+}
+
+/* src/ui/AssociatedNotes.svelte generated by Svelte v3.35.0 */
+
+function create_if_block(ctx) {
+	let div;
+	let t;
+	let current;
+	let if_block0 = /*$settings*/ ctx[6].showAssociatedNotesPane && create_if_block_2(ctx);
+	let if_block1 = /*$settings*/ ctx[6].showCreatedOnThisDay && create_if_block_1(ctx);
+
+	return {
+		c() {
+			div = element$1("div");
+			if (if_block0) if_block0.c();
+			t = space$1();
+			if (if_block1) if_block1.c();
+			attr$1(div, "class", "associated-notes-pane");
+		},
+		m(target, anchor) {
+			insert$1(target, div, anchor);
+			if (if_block0) if_block0.m(div, null);
+			append$1(div, t);
+			if (if_block1) if_block1.m(div, null);
+			current = true;
+		},
+		p(ctx, dirty) {
+			if (/*$settings*/ ctx[6].showAssociatedNotesPane) {
+				if (if_block0) {
+					if_block0.p(ctx, dirty);
+
+					if (dirty & /*$settings*/ 64) {
+						transition_in$1(if_block0, 1);
+					}
+				} else {
+					if_block0 = create_if_block_2(ctx);
+					if_block0.c();
+					transition_in$1(if_block0, 1);
+					if_block0.m(div, t);
+				}
+			} else if (if_block0) {
+				group_outros$1();
+
+				transition_out$1(if_block0, 1, 1, () => {
+					if_block0 = null;
+				});
+
+				check_outros$1();
+			}
+
+			if (/*$settings*/ ctx[6].showCreatedOnThisDay) {
+				if (if_block1) {
+					if_block1.p(ctx, dirty);
+
+					if (dirty & /*$settings*/ 64) {
+						transition_in$1(if_block1, 1);
+					}
+				} else {
+					if_block1 = create_if_block_1(ctx);
+					if_block1.c();
+					transition_in$1(if_block1, 1);
+					if_block1.m(div, null);
+				}
+			} else if (if_block1) {
+				group_outros$1();
+
+				transition_out$1(if_block1, 1, 1, () => {
+					if_block1 = null;
+				});
+
+				check_outros$1();
+			}
+		},
+		i(local) {
+			if (current) return;
+			transition_in$1(if_block0);
+			transition_in$1(if_block1);
+			current = true;
+		},
+		o(local) {
+			transition_out$1(if_block0);
+			transition_out$1(if_block1);
+			current = false;
+		},
+		d(detaching) {
+			if (detaching) detach$1(div);
+			if (if_block0) if_block0.d();
+			if (if_block1) if_block1.d();
+		}
+	};
+}
+
+// (28:4) {#if $settings.showAssociatedNotesPane}
+function create_if_block_2(ctx) {
+	let notelistsection;
+	let current;
+
+	notelistsection = new NoteListSection({
+			props: {
+				heading: `Notes for ${/*$selectedDate*/ ctx[3].format("ll")}`,
+				items: /*associatedItems*/ ctx[4],
+				emptyMessage: "No associated notes",
+				showBadge: /*$settings*/ ctx[6].showAssociatedNoteReason,
+				showPath: /*$settings*/ ctx[6].showAssociatedNotePath,
+				showPreview: /*$settings*/ ctx[6].showAssociatedNotePreview,
+				style: /*$settings*/ ctx[6].associatedNoteStyle,
+				onClickNote: /*onClickNote*/ ctx[0],
+				onHoverNote: /*onHoverNote*/ ctx[1],
+				onContextMenuNote: /*onContextMenuNote*/ ctx[2]
+			}
+		});
+
+	return {
+		c() {
+			create_component$1(notelistsection.$$.fragment);
+		},
+		m(target, anchor) {
+			mount_component$1(notelistsection, target, anchor);
+			current = true;
+		},
+		p(ctx, dirty) {
+			const notelistsection_changes = {};
+			if (dirty & /*$selectedDate*/ 8) notelistsection_changes.heading = `Notes for ${/*$selectedDate*/ ctx[3].format("ll")}`;
+			if (dirty & /*associatedItems*/ 16) notelistsection_changes.items = /*associatedItems*/ ctx[4];
+			if (dirty & /*$settings*/ 64) notelistsection_changes.showBadge = /*$settings*/ ctx[6].showAssociatedNoteReason;
+			if (dirty & /*$settings*/ 64) notelistsection_changes.showPath = /*$settings*/ ctx[6].showAssociatedNotePath;
+			if (dirty & /*$settings*/ 64) notelistsection_changes.showPreview = /*$settings*/ ctx[6].showAssociatedNotePreview;
+			if (dirty & /*$settings*/ 64) notelistsection_changes.style = /*$settings*/ ctx[6].associatedNoteStyle;
+			if (dirty & /*onClickNote*/ 1) notelistsection_changes.onClickNote = /*onClickNote*/ ctx[0];
+			if (dirty & /*onHoverNote*/ 2) notelistsection_changes.onHoverNote = /*onHoverNote*/ ctx[1];
+			if (dirty & /*onContextMenuNote*/ 4) notelistsection_changes.onContextMenuNote = /*onContextMenuNote*/ ctx[2];
+			notelistsection.$set(notelistsection_changes);
+		},
+		i(local) {
+			if (current) return;
+			transition_in$1(notelistsection.$$.fragment, local);
+			current = true;
+		},
+		o(local) {
+			transition_out$1(notelistsection.$$.fragment, local);
+			current = false;
+		},
+		d(detaching) {
+			destroy_component$1(notelistsection, detaching);
+		}
+	};
+}
+
+// (43:4) {#if $settings.showCreatedOnThisDay}
+function create_if_block_1(ctx) {
+	let notelistsection;
+	let current;
+
+	notelistsection = new NoteListSection({
+			props: {
+				heading: "Created on this day",
+				items: /*createdOnThisDayItems*/ ctx[5],
+				emptyMessage: "No notes created on this day",
+				showBadge: /*$settings*/ ctx[6].showAssociatedNoteReason,
+				showPath: /*$settings*/ ctx[6].showAssociatedNotePath,
+				showPreview: /*$settings*/ ctx[6].showAssociatedNotePreview,
+				style: /*$settings*/ ctx[6].associatedNoteStyle,
+				onClickNote: /*onClickNote*/ ctx[0],
+				onHoverNote: /*onHoverNote*/ ctx[1],
+				onContextMenuNote: /*onContextMenuNote*/ ctx[2]
+			}
+		});
+
+	return {
+		c() {
+			create_component$1(notelistsection.$$.fragment);
+		},
+		m(target, anchor) {
+			mount_component$1(notelistsection, target, anchor);
+			current = true;
+		},
+		p(ctx, dirty) {
+			const notelistsection_changes = {};
+			if (dirty & /*createdOnThisDayItems*/ 32) notelistsection_changes.items = /*createdOnThisDayItems*/ ctx[5];
+			if (dirty & /*$settings*/ 64) notelistsection_changes.showBadge = /*$settings*/ ctx[6].showAssociatedNoteReason;
+			if (dirty & /*$settings*/ 64) notelistsection_changes.showPath = /*$settings*/ ctx[6].showAssociatedNotePath;
+			if (dirty & /*$settings*/ 64) notelistsection_changes.showPreview = /*$settings*/ ctx[6].showAssociatedNotePreview;
+			if (dirty & /*$settings*/ 64) notelistsection_changes.style = /*$settings*/ ctx[6].associatedNoteStyle;
+			if (dirty & /*onClickNote*/ 1) notelistsection_changes.onClickNote = /*onClickNote*/ ctx[0];
+			if (dirty & /*onHoverNote*/ 2) notelistsection_changes.onHoverNote = /*onHoverNote*/ ctx[1];
+			if (dirty & /*onContextMenuNote*/ 4) notelistsection_changes.onContextMenuNote = /*onContextMenuNote*/ ctx[2];
+			notelistsection.$set(notelistsection_changes);
+		},
+		i(local) {
+			if (current) return;
+			transition_in$1(notelistsection.$$.fragment, local);
+			current = true;
+		},
+		o(local) {
+			transition_out$1(notelistsection.$$.fragment, local);
+			current = false;
+		},
+		d(detaching) {
+			destroy_component$1(notelistsection, detaching);
+		}
+	};
+}
+
+function create_fragment(ctx) {
+	let if_block_anchor;
+	let current;
+	let if_block = /*$selectedDate*/ ctx[3] && (/*$settings*/ ctx[6].showAssociatedNotesPane || /*$settings*/ ctx[6].showCreatedOnThisDay) && create_if_block(ctx);
+
+	return {
+		c() {
+			if (if_block) if_block.c();
+			if_block_anchor = empty$1();
+		},
+		m(target, anchor) {
+			if (if_block) if_block.m(target, anchor);
+			insert$1(target, if_block_anchor, anchor);
+			current = true;
+		},
+		p(ctx, [dirty]) {
+			if (/*$selectedDate*/ ctx[3] && (/*$settings*/ ctx[6].showAssociatedNotesPane || /*$settings*/ ctx[6].showCreatedOnThisDay)) {
+				if (if_block) {
+					if_block.p(ctx, dirty);
+
+					if (dirty & /*$selectedDate, $settings*/ 72) {
+						transition_in$1(if_block, 1);
+					}
+				} else {
+					if_block = create_if_block(ctx);
+					if_block.c();
+					transition_in$1(if_block, 1);
+					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+				}
+			} else if (if_block) {
+				group_outros$1();
+
+				transition_out$1(if_block, 1, 1, () => {
+					if_block = null;
+				});
+
+				check_outros$1();
+			}
+		},
+		i(local) {
+			if (current) return;
+			transition_in$1(if_block);
+			current = true;
+		},
+		o(local) {
+			transition_out$1(if_block);
+			current = false;
+		},
+		d(detaching) {
+			if (if_block) if_block.d(detaching);
+			if (detaching) detach$1(if_block_anchor);
+		}
+	};
+}
+
+function getReasonLabel(note) {
+	if (note.reason === "link") {
+		return "🔗 link";
+	}
+
+	return note.detail;
+}
+
+function instance($$self, $$props, $$invalidate) {
+	let $associatedNotesIndex;
+	let $selectedDate;
+	let $createdOnThisDayIndex;
+	let $settings;
+	component_subscribe($$self, associatedNotesIndex, $$value => $$invalidate(7, $associatedNotesIndex = $$value));
+	component_subscribe($$self, selectedDate, $$value => $$invalidate(3, $selectedDate = $$value));
+	component_subscribe($$self, createdOnThisDayIndex, $$value => $$invalidate(8, $createdOnThisDayIndex = $$value));
+	component_subscribe($$self, settings, $$value => $$invalidate(6, $settings = $$value));
+	
+	
+	
+	let { onClickNote } = $$props;
+	let { onHoverNote } = $$props;
+	let { onContextMenuNote } = $$props;
+	let associatedItems = [];
+	let createdOnThisDayItems = [];
 
 	$$self.$$set = $$props => {
 		if ("onClickNote" in $$props) $$invalidate(0, onClickNote = $$props.onClickNote);
@@ -5194,7 +5532,17 @@ function instance($$self, $$props, $$invalidate) {
 
 	$$self.$$.update = () => {
 		if ($$self.$$.dirty & /*$associatedNotesIndex, $selectedDate*/ 136) {
-			$$invalidate(4, notes = getAssociatedNotes($associatedNotesIndex, $selectedDate));
+			$$invalidate(4, associatedItems = getAssociatedNotes($associatedNotesIndex, $selectedDate).map(note => ({
+				file: note.file,
+				badge: getReasonLabel(note)
+			})));
+		}
+
+		if ($$self.$$.dirty & /*$createdOnThisDayIndex, $selectedDate*/ 264) {
+			$$invalidate(5, createdOnThisDayItems = getNotesCreatedOnThisDay($createdOnThisDayIndex, $selectedDate).map(file => ({
+				file,
+				badge: String(window.moment(file.stat.ctime).year())
+			})));
 		}
 	};
 
@@ -5203,13 +5551,11 @@ function instance($$self, $$props, $$invalidate) {
 		onHoverNote,
 		onContextMenuNote,
 		$selectedDate,
-		notes,
+		associatedItems,
+		createdOnThisDayItems,
 		$settings,
-		getExcerpt,
 		$associatedNotesIndex,
-		click_handler,
-		mouseover_handler,
-		contextmenu_handler
+		$createdOnThisDayIndex
 	];
 }
 
@@ -5487,6 +5833,7 @@ class CalendarView extends obsidian.ItemView {
         window.clearTimeout(this.reindexTimer);
         this.reindexTimer = window.setTimeout(() => {
             associatedNotesIndex.reindex();
+            createdOnThisDayIndex.reindex();
             if (this.calendar) {
                 this.calendar.tick();
             }
@@ -5524,6 +5871,7 @@ class CalendarView extends obsidian.ItemView {
         this.app.workspace.trigger(TRIGGER_ON_OPEN, sources);
         dailyNotes.reindex();
         associatedNotesIndex.reindex();
+        createdOnThisDayIndex.reindex();
         selectedDate.set(window.moment());
         this.applyAssociatedDotColor();
         this.calendar = new Calendar({

@@ -33,6 +33,9 @@ export interface ISettings {
   showAssociatedNotePreview: boolean;
   showAssociatedNoteReason: boolean;
 
+  // "Created on this day" settings
+  showCreatedOnThisDay: boolean;
+
   // Weekly Note settings
   showWeeklyNote: boolean;
   weeklyNoteFormat: string;
@@ -75,6 +78,8 @@ export const defaultSettings = Object.freeze({
   showAssociatedNotePath: true,
   showAssociatedNotePreview: true,
   showAssociatedNoteReason: true,
+
+  showCreatedOnThisDay: true,
 
   showWeeklyNote: false,
   weeklyNoteFormat: "",
@@ -145,7 +150,11 @@ export class CalendarSettingsTab extends PluginSettingTab {
     this.addAssociatedDatePropertiesSetting();
     this.addAssociatedRangePropertiesSetting();
     this.addAssociatedIncludeLinksSetting();
-    if (this.plugin.options.showAssociatedNotesPane) {
+    this.addShowCreatedOnThisDaySetting();
+    if (
+      this.plugin.options.showAssociatedNotesPane ||
+      this.plugin.options.showCreatedOnThisDay
+    ) {
       this.addAssociatedNoteStyleSetting();
       this.addAssociatedNoteInfoSettings();
     }
@@ -396,6 +405,21 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
   }
 
+  addShowCreatedOnThisDaySetting(): void {
+    new Setting(this.containerEl)
+      .setName("Show 'Created on this day' section")
+      .setDesc(
+        "Below the associated notes, list other notes (from any year) whose creation date falls on this day and month, based on each file's creation metadata"
+      )
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.showCreatedOnThisDay);
+        toggle.onChange(async (value) => {
+          this.plugin.writeOptions(() => ({ showCreatedOnThisDay: value }));
+          this.display(); // show/hide the shared display settings
+        });
+      });
+  }
+
   addAssociatedNoteStyleSetting(): void {
     new Setting(this.containerEl)
       .setName("Note display style")
@@ -443,7 +467,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Show match reason")
       .setDesc(
-        "Show a tag explaining why each note is associated with the date (the matching property, date range, or link)"
+        "Show a small tag on each note: the matching property, date range, or link for associated notes, or the creation year for 'Created on this day' notes"
       )
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.showAssociatedNoteReason);

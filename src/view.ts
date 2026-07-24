@@ -17,6 +17,7 @@ import type { ISettings } from "src/settings";
 import Calendar from "./ui/Calendar.svelte";
 import AssociatedNotes from "./ui/AssociatedNotes.svelte";
 import { associatedNotesIndex } from "./ui/associatedNotes";
+import { createdOnThisDayIndex } from "./ui/createdOnThisDay";
 import { showFileMenu } from "./ui/fileMenu";
 import {
   activeFile,
@@ -123,6 +124,7 @@ export default class CalendarView extends ItemView {
     window.clearTimeout(this.reindexTimer);
     this.reindexTimer = window.setTimeout(() => {
       associatedNotesIndex.reindex();
+      createdOnThisDayIndex.reindex();
       if (this.calendar) {
         this.calendar.tick();
       }
@@ -166,6 +168,7 @@ export default class CalendarView extends ItemView {
 
     dailyNotes.reindex();
     associatedNotesIndex.reindex();
+    createdOnThisDayIndex.reindex();
     selectedDate.set(window.moment());
     this.applyAssociatedDotColor();
 
